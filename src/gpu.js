@@ -51,11 +51,12 @@ export async function createWebGPU(canvas, meshes) {
     vertex: {
       module: mThings, entryPoint: 'vs',
       buffers: [{
-        arrayStride: 28,
+        arrayStride: 32,
         attributes: [
           { shaderLocation: 0, offset: 0, format: 'float32x3' },
           { shaderLocation: 1, offset: 12, format: 'float32x3' },
           { shaderLocation: 2, offset: 24, format: 'float32' },
+          { shaderLocation: 3, offset: 28, format: 'float32' },
         ],
       }],
     },

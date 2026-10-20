@@ -17,15 +17,18 @@ layout(std140) uniform U {
 layout(std140) uniform D { Inst inst[256]; } di;
 uniform int base;   // WebGL 2 has no first instance, so each mesh's range starts here
 
-layout(location = 0) in vec3 p;
+layout(location = 0) in vec3 p0;
 layout(location = 1) in vec3 n;
 layout(location = 2) in float cav;
+layout(location = 3) in float region;
 
 out vec3 vN;
 out vec3 vW;
 out vec3 vM;
 out float vHgt;
-flat out vec4 vMat;   // finish, seed
+out float vCav;
+flat out vec4 vMat;    // finish, seed, region
+flat out vec4 vRad;    // up off the water, in the water
 flat out vec3 vScl;
 
 vec3 qrot(vec4 q, vec3 v) {
@@ -35,6 +38,17 @@ vec3 qrot(vec4 q, vec3 v) {
 
 void main() {
   Inst it = di.inst[base + gl_InstanceID];
+  int reg = int(region + 0.5);
+  float t = u.a.x;
+  float seed = it.scl.w;
+  vec3 p = p0;
+  if (reg == 40) {
+    float k = sin(t * 2.2 + seed * 9.0);
+    p = vec3(p.x * (1.0 + 0.07 * k), p.y * (1.0 - 0.1 * k), p.z * (1.0 + 0.07 * k));
+  } else if (reg == 41 || reg == 42) {
+    float d = pow(max(-p.y, 0.0), 1.2);
+    p += vec3(sin(t * 1.6 + p.y * 8.0 + seed * 20.0), 0.0, cos(t * 1.3 + p.y * 6.0 + seed * 13.0)) * 0.14 * d;
+  }
   vec3 w = it.pos.xyz + qrot(it.q, p * it.scl.xyz);
   gl_Position = u.vp * vec4(w, 1.0);
   gl_Position.z = gl_Position.z * 2.0 - gl_Position.w;
@@ -42,6 +56,8 @@ void main() {
   vW = w;
   vM = p;
   vHgt = it.rad.w > 0.5 ? dot(w.xy, it.rad.xy) - it.rad.z : 10.0;
-  vMat = vec4(it.pos.w, it.scl.w, 0.0, 0.0);
+  vCav = cav;
+  vMat = vec4(it.pos.w, seed, float(reg), 0.0);
+  vRad = it.rad;
   vScl = it.scl.xyz;
 }

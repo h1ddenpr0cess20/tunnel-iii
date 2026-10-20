@@ -7,7 +7,7 @@ import {
   SPAWN_D, M_PER_UNIT, EYE_H, HIT_R, MISS_R, STREAK, A_LO, A_HI, CARVE, JUMP_V, GRAV, pathXY, wallR,
 } from './constants.js';
 import { MESH } from './meshes.js';
-import { qAxis, qMul, qNorm, qRot, qFromTo, qFromBasis, randomAxis, add, sub, scale, norm, cross, dot, segDist } from './math.js';
+import { qAxis, qMul, qNorm, qRot, qFromBasis, randomAxis, add, sub, scale, norm, cross, dot, segDist } from './math.js';
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -16,79 +16,42 @@ const rideSpeed = t => 5 + 6 * (1 - Math.exp(-t / 120));
 
 export const lightLeft = m => 30 * Math.pow(0.5, m / 250);   // metres to the way out
 
-// Meshes (see meshes.js) and finishes (see things.wgsl).
-const { SPHERE, BOX, BOARD, SHARK } = MESH;
+// Meshes (see meshes.js) and finishes (see things.wgsl). Most things have
+// their finishes painted on per region of the mesh; MAT is for the rest.
+const { BOARD, SHARK, TURTLE, FLIPPER, JELLY, BODIES } = MESH;
 export const MAT = { SKIN: 0, SUIT: 1, BOARD: 2, SHARK: 3, SHELL: 4, SCALY: 5, JELLY: 6, HAIR: 7, DECK: 8, RASH: 9 };
 const X_AXIS = [1, 0, 0], Y_AXIS = [0, 1, 0], Z_AXIS = [0, 0, 1];
 const ONE = [0, 0, 0, 1];
 const MID = (A_LO + A_HI) / 2;
+const U = 0.4;   // barrel radii per metre
 
 // ---- bodies -----------------------------------------------------------------
-// A stretched sphere from joint a to joint b, r thick.
-function limb(a, b, r, mat) {
-  const d = sub(b, a), len = Math.hypot(...d);
-  return { mesh: SPHERE, mat, off: lerp(a, b, 0.5), rot: qFromTo(Z_AXIS, scale(d, 1 / len)), scl: [r, r, len / 2 + r * 0.6] };
-}
-
-// A surfer crouched on a board, the board along z, feet across it. Local y
-// is up off the water.
+// A surfer crouched on a board, the board along z, feet across it, in one
+// of a few poses facing one way or the other. Local y is up off the water.
 function surferParts() {
-  const s = Math.random() < 0.5 ? -1 : 1;   // which way they face
-  const c = Math.random();                   // how deep they crouch
-  const suit = Math.random() < 0.6;
-  const top = suit ? MAT.SUIT : Math.random() < 0.5 ? MAT.RASH : MAT.SKIN;
-  const legs = suit ? MAT.SUIT : MAT.RASH;
-  const P = (x, y, z) => [s * x, y, z];
-  const feet = [P(0, 0.04, -0.12), P(0, 0.04, 0.13)];
-  const knees = [P(0.07, 0.17 - 0.03 * c, -0.09), P(0.075, 0.17 - 0.03 * c, 0.12)];
-  const hips = [P(0, 0.3 - 0.06 * c, -0.04), P(0, 0.3 - 0.06 * c, 0.05)];
-  const hip = lerp(hips[0], hips[1], 0.5);
-  const neck = P(0.05 + 0.04 * c, 0.5 - 0.08 * c, 0.02);
-  const head = add(neck, P(0.02, 0.065, 0.01));
-  const sh = [add(neck, P(-0.01, -0.03, -0.08)), add(neck, P(-0.01, -0.03, 0.08))];
-  const el = [add(sh[0], P(rnd(0.02, 0.08), -rnd(0.02, 0.1), -0.12)), add(sh[1], P(rnd(0.02, 0.08), rnd(-0.06, 0.05), 0.12))];
-  const hd = [add(el[0], P(rnd(0, 0.06), -rnd(0, 0.08), -0.1)), add(el[1], P(0.03, rnd(-0.05, 0.05), 0.11))];
-  const len = rnd(0.36, 0.5);
-  const parts = [{ mesh: BOARD, mat: MAT.BOARD, off: [0, 0.016, 0], scl: [0.105, 0.016, len] }];
-  for (let i = 0; i < 2; i++) {
-    parts.push(limb(hips[i], knees[i], 0.034, legs), limb(knees[i], feet[i], 0.027, suit ? MAT.SUIT : MAT.SKIN));
-    parts.push(limb(sh[i], el[i], 0.024, top === MAT.SKIN ? MAT.SKIN : top), limb(el[i], hd[i], 0.02, suit && i ? MAT.SUIT : MAT.SKIN));
-  }
-  const torso = sub(neck, hip), tl = Math.hypot(...torso);
-  parts.push({ mesh: SPHERE, mat: top, off: lerp(hip, neck, 0.5), rot: qFromTo(Y_AXIS, scale(torso, 1 / tl)), scl: [0.05, tl / 2 + 0.03, 0.08] });
-  parts.push({ mesh: SPHERE, mat: MAT.SKIN, off: head, scl: [0.042, 0.048, 0.042] });
-  parts.push({ mesh: SPHERE, mat: MAT.HAIR, off: add(head, P(-0.008, 0.014, 0)), scl: [0.044, 0.04, 0.045] });
-  return parts;
+  const body = BODIES[Math.floor(Math.random() * BODIES.length)];
+  return {
+    facing: body.facing,
+    parts: [
+      { mesh: BOARD, mat: MAT.BOARD, off: [0, 0.016, 0], scl: [0.105, 0.016, rnd(0.38, 0.5)] },
+      { mesh: body.mesh, mat: MAT.SKIN, off: [0, 0, 0], scl: [1, 1, 1] },
+    ],
+  };
 }
 
+// A turtle at the surface, rowing with its flippers.
 function turtleParts() {
-  const parts = [
-    { mesh: SPHERE, mat: MAT.SHELL, off: [0, 0.01, 0], scl: [0.13, 0.055, 0.16] },
-    { mesh: SPHERE, mat: MAT.SCALY, off: [0, 0.0, 0.0], scl: [0.12, 0.035, 0.15] },
-    { mesh: SPHERE, mat: MAT.SCALY, off: [0, 0.012, 0.19], scl: [0.035, 0.03, 0.048] },
-  ];
+  const parts = [{ mesh: TURTLE, mat: MAT.SHELL, off: [0, 0, 0], scl: [U, U, U] }];
   for (const side of [-1, 1]) {
     const ph = side > 0 ? 0 : Math.PI;
+    const front = [side * 0.27 * U, -0.01 * U, 0.2 * U], back = [side * 0.2 * U, -0.02 * U, -0.3 * U];
     parts.push({
-      mesh: BOX, mat: MAT.SCALY, off: [side * 0.17, 0, 0.08], scl: [0.09, 0.008, 0.03], rot: qAxis(Y_AXIS, side * 0.5),
-      flap: { axis: Z_AXIS, amp: 0.45 * side, w: 2.6, ph, pivot: [side * 0.1, 0, 0.1] },
+      mesh: FLIPPER, mat: MAT.SCALY, off: front, scl: [side * U, U, U], rot: qMul(qAxis(Y_AXIS, side * 0.35), qAxis(Z_AXIS, -side * 0.2)),
+      flap: { axis: Z_AXIS, amp: 0.6 * side, w: 2.4, ph, pivot: front },
     });
     parts.push({
-      mesh: BOX, mat: MAT.SCALY, off: [side * 0.11, -0.005, -0.15], scl: [0.045, 0.006, 0.025], rot: qAxis(Y_AXIS, -side * 0.6),
-      flap: { axis: Z_AXIS, amp: 0.25 * side, w: 2.6, ph: ph + 1, pivot: [side * 0.08, 0, -0.12] },
-    });
-  }
-  return parts;
-}
-
-function jellyParts() {
-  const parts = [{ mesh: SPHERE, mat: MAT.JELLY, off: [0, 0.02, 0], scl: [0.065, 0.045, 0.065] }];
-  for (let k = 0; k < 6; k++) {
-    const a = (k / 6) * Math.PI * 2;
-    const at = [Math.cos(a) * 0.035, -0.03, Math.sin(a) * 0.035];
-    parts.push({
-      mesh: SPHERE, mat: MAT.JELLY, off: add(at, [0, -0.07, 0]), scl: [0.005, 0.075, 0.005],
-      flap: { axis: Math.random() < 0.5 ? X_AXIS : Z_AXIS, amp: 0.35, w: rnd(1.5, 2.5), ph: Math.random() * 6.3, pivot: at },
+      mesh: FLIPPER, mat: MAT.SCALY, off: back, scl: [side * U * 0.45, U * 0.45, U * 0.45], rot: qAxis(Y_AXIS, side * 0.9),
+      flap: { axis: Z_AXIS, amp: 0.25 * side, w: 2.4, ph: ph + 1, pivot: back },
     });
   }
   return parts;
@@ -134,9 +97,10 @@ export function createGame(events) {
   }
 
   function surfer(z, a, kind = 'surfer', o = {}) {
+    const { facing, parts } = surferParts();
     return inWall(kind, z, a, {
-      parts: surferParts(), amp: rnd(0.12, 0.35), cw: rnd(0.7, 1.4), fwd: 2.5, vz: rnd(1.5, 2.5),
-      cols: [{ a: [0, 0.03, -0.3], b: [0, 0.03, 0.3], r: 0.07 }, { a: [0, 0.08, 0], b: [0.05, 0.52, 0.02], r: 0.1 }],
+      parts, amp: rnd(0.12, 0.35), cw: rnd(0.7, 1.4), fwd: 2.5, vz: rnd(1.5, 2.5),
+      cols: [{ a: [0, 0.03, -0.3], b: [0, 0.03, 0.3], r: 0.07 }, { a: [facing * 0.06, 0.08, 0], b: [facing * 0.12, 0.5, 0.02], r: 0.1 }],
       ...o,
     });
   }
@@ -144,15 +108,15 @@ export function createGame(events) {
   // A shark just under the water: only its fin shows.
   function fin(z, a) {
     return inWall('fin', z, a, {
-      parts: [{ mesh: SHARK, mat: MAT.SHARK, off: [0, 0, 0], scl: [0.45, 0.45, 0.45] }],
-      h: -0.1, va: rnd(0.35, 0.8) * (Math.random() < 0.5 ? -1 : 1), amp: 0.05, fwd: 0.12,
-      cols: [{ a: [0, 0.07, 0.05], b: [0, 0.25, -0.05], r: 0.035 }],
+      parts: [{ mesh: SHARK, mat: MAT.SHARK, off: [0, 0, 0], scl: [0.5, 0.5, 0.5] }],
+      h: -0.12, va: rnd(0.35, 0.8) * (Math.random() < 0.5 ? -1 : 1), amp: 0.05, fwd: 0.12,
+      cols: [{ a: [0, 0.12, 0.05], b: [0, 0.29, -0.06], r: 0.035 }],
     });
   }
 
   function turtle(z, a) {
     return inWall('turtle', z, a, {
-      parts: turtleParts(), h: -0.03, va: rnd(-0.15, 0.15), amp: 0.06, cw: 0.5, fwd: 0.6,
+      parts: turtleParts(), h: 0.012, va: rnd(-0.15, 0.15), amp: 0.06, cw: 0.5, fwd: 0.6,
       cols: [{ a: [0, 0.01, -0.05], b: [0, 0.01, 0.12], r: 0.13 }],
     });
   }
@@ -182,7 +146,7 @@ export function createGame(events) {
   function jelly(x, y, z) {
     return thing('jelly', z, {
       x, y, q: qAxis(randomAxis(), rnd(-0.5, 0.5)), axis: randomAxis(), w: rnd(0.2, 0.6), orbit: rnd(-0.45, -0.2),
-      parts: jellyParts(),
+      parts: [{ mesh: JELLY, mat: MAT.JELLY, off: [0, 0, 0], scl: [U, U, U] }],
       cols: [{ a: [0, 0.02, 0], b: [0, -0.1, 0], r: 0.07 }],
     });
   }
