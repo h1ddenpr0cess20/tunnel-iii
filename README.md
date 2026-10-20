@@ -54,18 +54,19 @@ Passing close is a near miss: you'll hear it go by.
 
 ## Sound
 
-All made as it plays, with Web Audio, no samples: a surf punk band at 192
-beats a minute. Two rhythm guitars, hard left and hard right, down-pick
-distorted power chords, chugging palm-muted through the verses and
-ringing open through the choruses. A surf lead in E phrygian dominant
-answers the verses and tremolo-picks the choruses through spring reverb,
-and slides in from the top of the neck. The bass drives eighths and the
-drums play a skate-punk beat with snare-roll fills, crashes and a tom
-breakdown. The guitars are plucked strings (Karplus-Strong) through
-waveshaper distortion and a speaker cabinet made of filters. When you wipe
-out, the band crashes on one last chord and the lead dives off the end of
-the whammy bar. Under it all: the roar of the barrel, the hiss of the board
-over the water, spray, and drops pinging off the board.
+All made as it plays, with Web Audio, no samples: a surf punk band at 176
+beats a minute, in E phrygian dominant. The lead is a surf guitar played
+low and twangy, the way Dick Dale did: it picks out the riff in the
+verses, tremolo-picks the chorus down an A G F E slide, and slides in from
+the top of the neck, all through spring reverb. Two rhythm guitars, one
+each side, chug palm-muted in the verses and down-pick open power chords
+in the choruses, through a tight amp and a dark cabinet. The bass drives
+eighths with a sub under it, and the drums play a punk beat, ride the
+choruses, fill, and break down to toms, in a small room. The guitars are
+plucked strings (Karplus-Strong). When you wipe out, the band crashes on
+one last chord and the lead dives off the end of the whammy bar. Under it
+all: the roar of the barrel, the hiss of the board over the water, and now
+and then a drop pinging off the board.
 
 ## Layout
 

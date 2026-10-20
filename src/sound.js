@@ -1,22 +1,24 @@
 // Synthesized sound, no samples. Audio starts on the first key press or tap.
 //
-// The band: surf punk, fast and loud. Two rhythm guitars, one hard left and
-// one hard right, down-pick distorted power chords, chugging palm-muted in
-// the verses and ringing open in the choruses; a surf lead in E phrygian
-// dominant answers the verses and tremolo-picks the choruses through spring
-// reverb, sliding in from the top of the neck; the bass drives eighths and
-// the drums play a skate-punk beat with fills, crashes and a tom breakdown.
-// The guitars are plucked strings (Karplus-Strong), worked out once per
-// note. The song goes round for ever, like the wave. Under it there's the
-// barrel: the roar of the water, the hiss of the board over it, spray, and
-// drops pinging off the board.
+// The band: surf punk. The lead is a surf guitar in E phrygian dominant,
+// played low and twangy the way Dick Dale did, picking out the riff in the
+// verses and tremolo-picking the chorus down an A G F E slide, all through
+// spring reverb; it slides in from the top of the neck. Two rhythm guitars,
+// one each side, chug palm-muted in the verses and down-pick open power
+// chords in the choruses, through a tight amp and a dark cabinet. The bass
+// drives eighths with a sub under it, and the drums play a punk beat, ride
+// the choruses, fill, and break down to toms, in a small room. The guitars
+// are plucked strings (Karplus-Strong), worked out once per note. The song
+// goes round for ever, like the wave. Under it there's the barrel: the roar
+// of the water, the hiss of the board over it, and now and then a drop
+// pinging off the board.
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch { /* storage unavailable */ } },
 };
 
 const LEVEL = 0.7;
-const BPM = 192;
+const BPM = 176;
 const E8 = 60 / BPM / 2;   // an eighth note, in seconds
 const AHEAD = 0.2;         // schedule the band this far ahead
 
@@ -27,15 +29,13 @@ const midi = n => {
   return 12 * (Number(m[3]) + 1) + SEMI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
 };
 const hz = m => 440 * Math.pow(2, (m - 69) / 12);
-const POWER = [0, 7, 12];   // a power chord: root, fifth, octave
 
 // Each bar is eight eighths and names its chord by its root (two roots
-// split the bar). Lead lines: a note picks once; a note with ~ is tremolo
-// picked; - holds the note before; . is a rest. Bass lines the same, picked.
-// A section's rhythm guitars play `mute` (palm-muted chugs, the accents let
-// ring), `open` (every eighth down-picked and ringing), `push` (hits on 1,
-// the and of 2 and 4) or `chunk` (one hit a bar). `slide` starts the lead
-// with a tremolo-picked slide down from the top of the neck.
+// split the bar). Lead and bass lines: a note picks once; a note with ~ is
+// tremolo picked; - holds the note before; . is a rest. A section's rhythm
+// guitars play `mute` (palm-muted chugs, the accents let ring), `open`
+// (every eighth down-picked and ringing), `chunk` (one hit a bar) or
+// `none`. `slide` starts the lead with a tremolo-picked slide down the neck.
 const SECTIONS = {
   intro: {
     beat: 'roll', rhythm: 'none', bass: 'none', slide: true,
@@ -44,24 +44,24 @@ const SECTIONS = {
   },
   verse: {
     beat: 'punk', rhythm: 'mute', bass: 'eighths',
-    chords: ['E2', 'E2', 'G2', 'A2', 'E2', 'E2', 'C3', 'B2'],
+    chords: ['E2', 'E2', 'E2', 'F2', 'E2', 'E2', 'F2', 'E2'],
     lead: [
-      '. . . . . . . .', 'E4 F4 G#4 A4 B4 . A4 G#4', '. . . . . . . .', 'F4 . E4 . . . . .',
-      '. . . . . . . .', 'E4 F4 G#4 A4 B4 C5 D5 C5', '. . . . . . . .', 'B4~ - - - E4~ - - -',
+      'E3 . E3 F3 G#3 . F3 E3', 'E3 . E3 F3 G#3 A3 G#3 F3', 'E3 . E3 F3 G#3 . F3 E3', 'F3 . F3 G#3 A3 . G#3 F3',
+      'E3 . E3 F3 G#3 . F3 E3', 'E3 . E3 F3 G#3 A3 B3 C4', 'D4 . C4 B3 C4 . B3 A3', 'G#3 - - - E3 - . .',
     ],
   },
   chorus: {
     beat: 'drive', rhythm: 'open', bass: 'eighths',
-    chords: ['C3/D3', 'E2', 'C3/D3', 'B2', 'C3/D3', 'E2', 'A2/B2', 'E2'],
+    chords: ['A2', 'A2', 'G2', 'G2', 'F2', 'F2', 'E2', 'E2'],
     lead: [
-      'E5~ - - - F5~ - E5~ -', 'G#5~ - - - - - - -', 'A5~ - G#5~ - F5~ - E5~ -', 'D#5~ - - - - - - -',
-      'E5~ - - - F5~ - E5~ -', 'G#5~ - - - B5~ - - -', 'C6~ - B5~ - A5~ - G#5~ -', 'E5~ - - - - - . .',
+      'C5~ - - - B4~ - A4~ -', 'E4~ - - - - - - -', 'B4~ - - - A4~ - G4~ -', 'D4~ - - - - - - -',
+      'A4~ - - - G#4~ - F4~ -', 'C4~ - - - - - - -', 'B3~ - C4~ - B3~ - A3~ -', 'G#3~ - - - - - . .',
     ],
   },
   breakdown: {
     beat: 'toms', rhythm: 'chunk', bass: 'riff', slide: true,
     chords: ['E2', 'E2', 'E2', 'E2'],
-    lead: ['. . . . . . . .', '. . . . . . . .', '. . . . . . . .', 'E4 F4 G#4 A4 B4 C5 D5 E5'],
+    lead: ['. . . . . . . .', '. . . . . . . .', '. . . . . . . .', 'E3 F3 G#3 A3 B3 C4 D4 E4'],
     riff: ['E1 . E1 F1 E1 . G#1 A1', 'E1 . E1 F1 E1 . G#1 A1', 'E1 . E1 F1 E1 . G#1 A1', 'B1 B1 A1 A1 G#1 G#1 F1 F1'],
   },
 };
@@ -86,8 +86,8 @@ const SONG = ORDER.flatMap((name, k) => {
   return sec.chords.map((c, i) => ({
     roots: c.split('/').map(midi), lead: parseLine(sec.lead[i]), riff: sec.riff ? parseLine(sec.riff[i]) : null,
     beat: sec.beat, rhythm: sec.rhythm, bass: sec.bass,
-    first: i === 0, last: i === sec.chords.length - 1, fill: i % 4 === 3 && sec.beat !== 'roll',
-    slide: sec.slide && i === 0, chorus: name === 'chorus', start: k === LOOP_TO && i === 0,
+    first: i === 0, last: i === sec.chords.length - 1, fill: i % 4 === 3 && sec.beat !== 'roll' && sec.beat !== 'toms',
+    slide: sec.slide && i === 0, start: k === LOOP_TO && i === 0,
   }));
 });
 const LOOP_BAR = SONG.findIndex(b => b.start);
@@ -124,20 +124,26 @@ function pluck(ac, f, dur, { bright, decay, stretch, pick }) {
   return { buf, f0 };
 }
 const STRINGS = {
-  lead: { dur: 2.0, bright: 0.85, decay: 0.9985, stretch: 0.3, pick: 0.12 },
-  // Two of each rhythm string, so the left and right guitars aren't the same take.
-  rhythm: { dur: 1.4, bright: 0.8, decay: 0.998, stretch: 0.35, pick: 0.18 },
-  rhythm2: { dur: 1.4, bright: 0.75, decay: 0.998, stretch: 0.38, pick: 0.22 },
-  bass: { dur: 1.2, bright: 0.35, decay: 0.997, stretch: 0.5, pick: 0.25 },
+  lead: { dur: 1.8, bright: 0.35, decay: 0.998, stretch: 0.4, pick: 0.15 },
+  // Two takes of each rhythm string, so the left and right guitars differ.
+  open: { dur: 1.2, bright: 0.4, decay: 0.998, stretch: 0.4, pick: 0.2 },
+  open2: { dur: 1.2, bright: 0.36, decay: 0.998, stretch: 0.42, pick: 0.24 },
+  // Palm-muted: damped, so the top dies away almost at once.
+  mute: { dur: 0.35, bright: 0.35, decay: 0.985, stretch: 0.5, pick: 0.2 },
+  mute2: { dur: 0.35, bright: 0.32, decay: 0.984, stretch: 0.5, pick: 0.24 },
+  bass: { dur: 1.0, bright: 0.25, decay: 0.997, stretch: 0.5, pick: 0.25 },
 };
 
-// A waveshaper: tanh, pushed by `drive`.
+// A soft clipper, a little harder on one side, like a valve.
 function shaper(ac, drive) {
   const s = ac.createWaveShaper();
-  const curve = new Float32Array(2048);
-  for (let i = 0; i < 2048; i++) { const x = (i / 1023.5 - 1) * drive; curve[i] = Math.tanh(x) / Math.tanh(drive); }
+  const curve = new Float32Array(4096);
+  for (let i = 0; i < 4096; i++) {
+    const x = (i / 2047.5 - 1) * drive;
+    curve[i] = (x >= 0 ? Math.tanh(x) : Math.tanh(x * 0.8) / 0.8) / Math.tanh(drive);
+  }
   s.curve = curve;
-  s.oversample = '2x';
+  s.oversample = '4x';
   return s;
 }
 function filter(ac, type, f, q = 0.7, gain = 0) {
@@ -145,9 +151,26 @@ function filter(ac, type, f, q = 0.7, gain = 0) {
   b.type = type; b.frequency.value = f; b.Q.value = q; b.gain.value = gain;
   return b;
 }
+function gainNode(ac, g) { const n = ac.createGain(); n.gain.value = g; return n; }
 function chain(...nodes) {
   for (let i = 0; i < nodes.length - 1; i++) nodes[i].connect(nodes[i + 1]);
   return nodes[nodes.length - 1];
+}
+// A decaying burst of stereo noise, for a reverb: `bounce` adds a flutter
+// `D` seconds apart, like a spring.
+function impulse(ac, secs, decay, bounce = 0) {
+  const sr = ac.sampleRate, len = Math.floor(sr * secs);
+  const ir = ac.createBuffer(2, len, sr);
+  for (let c = 0; c < 2; c++) {
+    const d = ir.getChannelData(c);
+    const D = Math.floor(sr * (c ? 0.0337 : 0.0291));
+    let lp = 0;
+    for (let i = 0; i < len; i++) {
+      lp += (Math.random() * 2 - 1 - lp) * 0.5;
+      d[i] = lp * Math.exp(-i / (sr * decay)) + (bounce && i >= D ? d[i - D] * bounce : 0);
+    }
+  }
+  return ir;
 }
 
 export const Sound = {
@@ -196,68 +219,58 @@ export const Sound = {
     const roarFG = ac.createGain(); roarFG.gain.value = 140;
     roarF.connect(roarFG); roarFG.connect(roar.bp.frequency); roarF.start();
     this.roar = roar.g;
-    const hiss = loop('bandpass', 1400, 0.7, 0.03);
+    const hiss = loop('bandpass', 1400, 0.7, 0.025);
     this.hiss = hiss.g; this.hissF = hiss.bp;
-    loop('highpass', 7000, 0.5, 0.012);
   },
 
   // ---- the band -------------------------------------------------------------
   initBand(dest) {
     const ac = this.ac;
-    this.music = ac.createGain(); this.music.gain.value = 0.4;
-    this.music.connect(dest);
-    // Spring reverb: a decaying burst that flutters back on itself.
-    const sr = ac.sampleRate, len = Math.floor(sr * 2.2);
-    const ir = ac.createBuffer(2, len, sr);
-    for (let c = 0; c < 2; c++) {
-      const d = ir.getChannelData(c);
-      const D = Math.floor(sr * (c ? 0.0337 : 0.0291));
-      let lp = 0;
-      for (let i = 0; i < len; i++) {
-        lp += (Math.random() * 2 - 1 - lp) * 0.55;
-        d[i] = lp * Math.exp(-i / (sr * 0.5)) * 0.5 + (i >= D ? d[i - D] * 0.5 : 0);
-      }
-    }
-    const verb = ac.createConvolver(); verb.buffer = ir;
-    const wet = ac.createGain(); wet.gain.value = 0.3;
-    verb.connect(wet); wet.connect(this.music);
-    const send = ac.createGain(); send.connect(verb);
+    // The band's own bus: glued by a gentle compressor, the very top rolled off.
+    this.music = gainNode(ac, 0.4);
+    const glue = ac.createDynamicsCompressor();
+    glue.threshold.value = -20; glue.ratio.value = 3; glue.attack.value = 0.01; glue.release.value = 0.15; glue.knee.value = 10;
+    const sum = gainNode(ac, 1);
+    chain(sum, glue, filter(ac, 'lowpass', 13000, 0.5), this.music, dest);
+    // Spring reverb for the guitars, a small room for the drums.
+    const spring = ac.createConvolver(); spring.buffer = impulse(ac, 2.0, 0.45, 0.45);
+    chain(spring, filter(ac, 'highpass', 300), filter(ac, 'lowpass', 3500), gainNode(ac, 0.5), sum);
+    const room = ac.createConvolver(); room.buffer = impulse(ac, 0.7, 0.12);
+    chain(room, filter(ac, 'lowpass', 7000), gainNode(ac, 0.35), sum);
 
-    // Rhythm guitars: one each side, palm-muted notes darkened before the
-    // distortion, then a cabinet: no fizz up top, no mud down low.
+    // Rhythm guitars, one each side: tightened and darkened before the amp
+    // so the low end doesn't flub and the top doesn't fizz, then through a
+    // dark cabinet with some weight in the low mids.
     const side = pan => {
-      const open = ac.createGain();
-      const mute = ac.createGain();
-      const pre = ac.createGain(); pre.gain.value = 2.2;
-      chain(mute, filter(ac, 'lowpass', 900, 0.9), pre);
-      open.connect(pre);
-      const out = chain(pre, shaper(ac, 7), filter(ac, 'highpass', 95), filter(ac, 'peaking', 1700, 0.8, 4),
-        filter(ac, 'lowpass', 4600, 0.8), filter(ac, 'lowpass', 6500, 0.6));
-      const g = ac.createGain(); g.gain.value = 0.26;
-      const p = ac.createStereoPanner ? ac.createStereoPanner() : ac.createGain();
+      const inp = gainNode(ac, 1);
+      const amp = chain(inp, filter(ac, 'highpass', 90), filter(ac, 'lowpass', 2500, 0.6), gainNode(ac, 2), shaper(ac, 3));
+      const cab = chain(amp, filter(ac, 'peaking', 120, 1, 3), filter(ac, 'peaking', 260, 0.9, 3), filter(ac, 'peaking', 1600, 0.7, -7),
+        filter(ac, 'lowpass', 2400, 0.7), filter(ac, 'lowpass', 2900, 0.9), filter(ac, 'lowpass', 3600, 0.7), gainNode(ac, 0.28));
+      const p = ac.createStereoPanner ? ac.createStereoPanner() : gainNode(ac, 1);
       if (p.pan) p.pan.value = pan;
-      chain(out, g, p, this.music);
-      const s = ac.createGain(); s.gain.value = 0.08; g.connect(s); s.connect(send);
-      return { open, mute };
+      chain(cab, p, sum);
+      cab.connect(gainNode(ac, 0.06)).connect(spring);
+      return inp;
     };
-    const left = side(-0.7), right = side(0.7);
-    // The lead: driven a little, bright, deep in the spring.
-    const lead = ac.createGain(); lead.gain.value = 0.9;
-    const leadOut = chain(lead, filter(ac, 'highpass', 160), ac.createGain(), shaper(ac, 2.8), filter(ac, 'peaking', 2600, 0.9, 5), filter(ac, 'lowpass', 7000));
-    const leadDry = ac.createGain(); leadDry.gain.value = 0.42;
-    chain(leadOut, leadDry, this.music);
-    const leadSend = ac.createGain(); leadSend.gain.value = 0.9;
-    chain(leadOut, leadSend, send);
-    // The bass, driven and kept low.
-    const bass = ac.createGain(); bass.gain.value = 1;
-    const bassOut = ac.createGain(); bassOut.gain.value = 0.55;
-    chain(bass, shaper(ac, 2.2), filter(ac, 'lowpass', 1500), bassOut, this.music);
-    // The drums, with a little room.
-    const drums = ac.createGain(); drums.gain.value = 0.8; drums.connect(this.music);
-    const drumSend = ac.createGain(); drumSend.gain.value = 0.12; drums.connect(drumSend); drumSend.connect(send);
+    const left = side(-0.75), right = side(0.75);
+    // The lead: a clean, twangy amp just breaking up, deep in the spring.
+    const lead = gainNode(ac, 0.9);
+    const leadAmp = chain(lead, filter(ac, 'highpass', 120), filter(ac, 'lowpass', 4000, 0.6), gainNode(ac, 1.4), shaper(ac, 1.6),
+      filter(ac, 'peaking', 700, 0.8, 2.5), filter(ac, 'peaking', 2200, 0.8, -4), filter(ac, 'lowpass', 3200, 0.7), filter(ac, 'lowpass', 5000, 0.6));
+    chain(leadAmp, gainNode(ac, 0.34), sum);
+    leadAmp.connect(gainNode(ac, 0.55)).connect(spring);
+    // The bass: a plucked string, a little driven, and a sine under it.
+    const bass = gainNode(ac, 1);
+    chain(bass, shaper(ac, 1.5), filter(ac, 'lowpass', 1000), gainNode(ac, 0.42), sum);
+    const sub = gainNode(ac, 0.22);
+    chain(sub, filter(ac, 'lowpass', 200), sum);
+    // The drums.
+    const drums = gainNode(ac, 0.75);
+    chain(drums, filter(ac, 'lowpass', 12000), sum);
+    drums.connect(gainNode(ac, 0.5)).connect(room);
     // A slow wobble for the whammy bar.
-    const vib = ac.createOscillator(); vib.frequency.value = 5.6; vib.start();
-    this.bus = { left, right, lead, bass, drums, vib };
+    const vib = ac.createOscillator(); vib.frequency.value = 5.4; vib.start();
+    this.bus = { left, right, lead, bass, sub, drums, vib };
     this.band = { on: true, bar: 0, slot: 0, next: ac.currentTime + 0.1, lead: false, voice: null };
   },
 
@@ -276,7 +289,7 @@ export const Sound = {
     src.playbackRate.value = rate;
     const g = ac.createGain();
     g.gain.setValueAtTime(gain, t);
-    g.gain.setTargetAtTime(0, t + dur, 0.025);
+    g.gain.setTargetAtTime(0, t + dur, 0.03);
     src.connect(g); g.connect(dest);
     src.start(t); src.stop(t + Math.min(buf.duration, dur + 0.25));
     return { src, g, rate };
@@ -285,12 +298,12 @@ export const Sound = {
   // The lead guitar is one string: each new note stops the last.
   leadNote(m, t, dur, gain, vibrato) {
     const v = this.band.voice;
-    if (v) { v.g.gain.cancelScheduledValues(t); v.g.gain.setTargetAtTime(0, t, 0.006); }
+    if (v) { v.g.gain.cancelScheduledValues(t); v.g.gain.setTargetAtTime(0, t, 0.008); }
     const n = this.pick('lead', m, t, dur, gain, this.bus.lead);
     if (vibrato) {
       const depth = this.ac.createGain();
       depth.gain.setValueAtTime(0, t);
-      depth.gain.linearRampToValueAtTime(n.rate * 0.014, t + Math.min(dur, 0.3));
+      depth.gain.linearRampToValueAtTime(n.rate * 0.01, t + Math.min(dur, 0.35));
       this.bus.vib.connect(depth); depth.connect(n.src.playbackRate);
       n.src.onended = () => { try { this.bus.vib.disconnect(depth); } catch { /* already gone */ } };
     }
@@ -298,15 +311,28 @@ export const Sound = {
     return n;
   },
 
-  // A power chord on both rhythm guitars, the right a hair late and a
-  // hair sharp, as if played twice.
+  // A power chord on both rhythm guitars, the right a hair late and a hair
+  // sharp, as if played twice. Open chords add the octave.
   chord(root, t, dur, gain, muted) {
-    const { left, right } = this.bus;
-    POWER.forEach((iv, k) => {
+    const notes = muted ? [0, 7] : [0, 7, 12];
+    notes.forEach((iv, k) => {
       const m = root + iv;
-      this.pick('rhythm', m, t + k * 0.004, dur, gain, muted ? left.mute : left.open);
-      this.pick('rhythm2', m + 0.06, t + 0.011 + k * 0.004, dur, gain, muted ? right.mute : right.open);
+      this.pick(muted ? 'mute' : 'open', m, t + k * 0.005, dur, gain, this.bus.left);
+      this.pick(muted ? 'mute2' : 'open2', m + 0.05, t + 0.012 + k * 0.005, dur, gain, this.bus.right);
     });
+  },
+
+  bassNote(m, t, dur, gain) {
+    this.pick('bass', m, t, dur, gain, this.bus.bass);
+    const ac = this.ac;
+    const o = ac.createOscillator(); o.frequency.value = hz(m);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain, t + 0.006);
+    g.gain.setTargetAtTime(gain * 0.6, t + 0.02, 0.1);
+    g.gain.setTargetAtTime(0, t + dur, 0.02);
+    o.connect(g); g.connect(this.bus.sub);
+    o.start(t); o.stop(t + dur + 0.15);
   },
 
   // ---- drums --------------------------------------------------------------
@@ -329,55 +355,57 @@ export const Sound = {
     }
   },
   kick(t, v = 1) {
-    this.hit(t, { f0: 170, f1: 48, fall: 0.07, decay: 0.3, gain: 1.0 * v, noise: 0.25 * v, nf: 3500, nType: 'highpass', nDecay: 0.012 });
+    this.hit(t, { f0: 115, f1: 46, fall: 0.06, decay: 0.38, gain: 1.0 * v, noise: 0.1 * v, nf: 2500, nType: 'lowpass', nDecay: 0.008 });
   },
   snare(t, v = 1) {
-    this.hit(t, { f0: 240, f1: 180, fall: 0.04, decay: 0.09, gain: 0.3 * v, type: 'triangle', noise: 0.55 * v, nf: 2600, nq: 0.6, nDecay: 0.19 });
-    this.hit(t, { gain: 0, noise: 0.22 * v, nf: 6000, nType: 'highpass', nDecay: 0.08 });
+    this.hit(t, { f0: 195, f1: 160, fall: 0.04, decay: 0.11, gain: 0.32 * v, type: 'triangle', noise: 0.3 * v, nf: 1800, nq: 0.9, nDecay: 0.17 });
+    this.hit(t, { gain: 0, noise: 0.06 * v, nf: 4500, nType: 'highpass', nDecay: 0.06 });
   },
-  hat(t, v = 1, open = false) { this.hit(t, { gain: 0, noise: 0.11 * v, nf: 8000, nType: 'highpass', nDecay: open ? 0.16 : 0.03 }); },
-  tom(t, f, v = 1) { this.hit(t, { f0: f * 1.6, f1: f, fall: 0.05, decay: 0.32, gain: 0.7 * v, noise: 0.12 * v, nf: f * 4, nDecay: 0.05 }); },
+  hat(t, v = 1, open = false) { this.hit(t, { gain: 0, noise: 0.3 * v, nf: 7000, nType: 'highpass', nDecay: open ? 0.16 : 0.045 }); },
+  ride(t, v = 1) {
+    this.hit(t, { f0: 3100, f1: 3050, fall: 0.2, decay: 0.3, gain: 0.01 * v, noise: 0.22 * v, nf: 7000, nq: 0.8, nDecay: 0.45 });
+  },
+  tom(t, f, v = 1) { this.hit(t, { f0: f * 1.4, f1: f, fall: 0.05, decay: 0.35, gain: 0.6 * v, noise: 0.06 * v, nf: f * 3, nType: 'lowpass', nDecay: 0.04 }); },
   cymbal(t, v = 1) {
-    this.hit(t, { gain: 0, noise: 0.2 * v, nf: 5200, nType: 'highpass', nDecay: 1.6 });
-    this.hit(t, { gain: 0, noise: 0.1 * v, nf: 3200, nq: 2, nDecay: 0.9 });
+    this.hit(t, { gain: 0, noise: 0.2 * v, nf: 4500, nType: 'highpass', nDecay: 1.3 });
+    this.hit(t, { gain: 0, noise: 0.04 * v, nf: 6500, nq: 0.6, nDecay: 0.7 });
   },
 
   drums(bar, slot, t) {
     const half = E8 / 2;
-    if (bar.first && slot === 0 && bar.beat !== 'roll') this.cymbal(t, 1.2);
     if (bar.beat === 'roll') {
-      // Into the song: a snare roll building over the slide, toms at the end.
+      // Into the song: floor toms building under the slide, the snare at the end.
       const k = (bar.last ? 8 : 0) + slot;
-      if (bar.last && slot >= 4) { this.tom(t, slot >= 6 ? 95 : 140); this.tom(t + half, slot >= 6 ? 80 : 120, 0.9); return; }
-      this.snare(t, 0.25 + 0.05 * k); this.snare(t + half, 0.2 + 0.05 * k);
+      if (bar.last && slot >= 4) { this.snare(t, 0.6 + 0.08 * (slot - 4)); this.snare(t + half, 0.55 + 0.08 * (slot - 4)); return; }
+      this.tom(t, 80, 0.3 + 0.05 * k);
       return;
     }
+    if (bar.first && slot === 0) this.cymbal(t);
     if (bar.beat === 'toms') {
-      // The breakdown: floor tom eighths, snare on 2 and 4, a crash every bar.
-      if (slot === 0) this.cymbal(t, 0.9);
-      this.tom(t, slot % 2 ? 85 : 95, slot % 2 ? 0.7 : 1);
-      if (slot === 2 || slot === 6) this.snare(t);
-      if (slot === 0 || slot === 3 || slot === 5) this.kick(t);
-      if (bar.fill && slot >= 4) { this.snare(t + half, 0.7); this.tom(t + half, 130, 0.8); }
+      // The breakdown: floor toms on the beat, snare on 2 and 4.
+      if (slot % 2 === 0) this.tom(t, 82);
+      if (slot === 0 || slot === 4) this.kick(t);
+      if (slot === 2 || slot === 6) this.snare(t, 0.9);
+      if (bar.last && slot >= 6) { this.snare(t + half, 0.7); this.tom(t + half, 120, 0.7); }
       return;
     }
     if (bar.fill && slot >= 4) {
-      // A fill: sixteenths on the snare, down the toms.
-      if (slot < 6) { this.snare(t, 0.8); this.snare(t + half, 0.65); }
-      else { this.tom(t, slot === 6 ? 150 : 100); this.tom(t + half, slot === 6 ? 120 : 85, 0.9); }
+      // A fill: sixteenths on the snare, then down the toms.
+      if (slot < 6) { this.snare(t, 0.55 + 0.05 * slot); this.snare(t + half, 0.45 + 0.05 * slot); }
+      else { this.tom(t, slot === 6 ? 140 : 95, 0.8); this.tom(t + half, slot === 6 ? 115 : 82, 0.75); }
       if (slot === 4) this.kick(t);
       return;
     }
     if (bar.beat === 'drive') {
-      // Chorus: kick on every beat, snare on 2 and 4, washing on the crash.
-      if (slot % 2 === 0) this.kick(t);
-      if (slot === 2 || slot === 6) this.snare(t, 1.1);
-      if (slot % 2 === 0) this.cymbal(t, 0.35); else this.hat(t, 0.9, true);
+      // Chorus: kick on the beat, snare on 2 and 4, riding the eighths.
+      if (slot % 2 === 0) this.kick(t, slot === 2 || slot === 6 ? 0.8 : 1);
+      if (slot === 2 || slot === 6) this.snare(t);
+      this.ride(t, slot % 2 ? 0.6 : 1);
     } else {
-      // Verse: the skate-punk polka, kick on the eighths, snare on the ands.
-      if (slot % 2 === 0) this.kick(t, slot === 0 ? 1 : 0.85);
-      else this.snare(t, slot === 3 || slot === 7 ? 1 : 0.85);
-      this.hat(t, slot % 2 ? 0.6 : 1);
+      // Verse: a punk beat on the hats.
+      if (slot === 0 || slot === 4 || slot === 5) this.kick(t, slot === 5 ? 0.75 : 1);
+      if (slot === 2 || slot === 6) this.snare(t);
+      this.hat(t, slot % 2 ? 0.55 : 1);
     }
   },
 
@@ -387,34 +415,35 @@ export const Sound = {
     this.drums(bar, slot, t);
     const root = rootAt(bar, slot);
     // Bass: eighths on the root, or the breakdown's riff.
-    if (bar.bass === 'eighths') this.pick('bass', root - 12, t, E8 * 0.85, 0.9, this.bus.bass);
-    if (bar.bass === 'riff') for (const e of bar.riff) if (e.at === slot) this.pick('bass', e.m, t, e.len * E8 * 0.85, 0.95, this.bus.bass);
+    if (bar.bass === 'eighths') this.bassNote(root - 12, t, E8 * 0.85, slot % 2 ? 0.75 : 0.9);
+    if (bar.bass === 'riff') for (const e of bar.riff) if (e.at === slot) this.bassNote(e.m, t, e.len * E8 * 0.85, 0.95);
     // Rhythm guitars.
     if (bar.rhythm === 'mute') {
       const accent = slot === 0 || slot === 3 || slot === 6;
-      this.chord(root, t, accent ? E8 * 0.9 : E8 * 0.55, accent ? 0.8 : 0.62, !accent);
+      this.chord(root, t, accent ? E8 * 0.9 : E8 * 0.5, accent ? 0.6 : 0.45, !accent);
     } else if (bar.rhythm === 'open') {
-      this.chord(root, t, E8 * 0.95, slot % 2 ? 0.62 : 0.75, false);
-    } else if (bar.rhythm === 'push' && (slot === 0 || slot === 3 || slot === 6)) {
-      this.chord(root, t, E8 * 2.5, 0.75, false);
+      this.chord(root, t, E8 * 0.95, slot % 2 ? 0.45 : 0.55, false);
     } else if (bar.rhythm === 'chunk' && slot === 0) {
-      this.chord(root, t, E8 * 3, 0.8, false);
+      this.chord(root, t, E8 * 3, 0.6, false);
     }
     if (!b.lead) return;
-    // The slide down from the top of the neck, tremolo-picked.
+    // The slide down the neck, tremolo-picked.
     if (bar.slide && slot === 0) {
       const picks = bar.beat === 'roll' ? 30 : 14;
-      for (let k = 0; k < picks; k++) this.leadNote(midi('E6') - (k / picks) * 26, t + k * E8 / 2, E8 / 2, k % 2 ? 0.55 : 0.7, false);
+      for (let k = 0; k < picks; k++) this.leadNote(midi('E5') - (k / picks) * 24, t + k * E8 / 2, E8 / 2, k % 2 ? 0.5 : 0.62, false);
     }
     for (const e of bar.lead) {
       if (e.at !== slot) continue;
       const dur = e.len * E8;
       if (e.trem) {
-        // Tremolo picking: sixteenths, down-up, one after another.
+        // Tremolo picking: sixteenths, down-up, swelling into the note.
         const n = Math.round(dur / (E8 / 2));
-        for (let k = 0; k < n; k++) this.leadNote(e.m, t + k * E8 / 2, E8 / 2, (k % 2 ? 0.6 : 0.75) * (0.92 + Math.random() * 0.08), false);
+        for (let k = 0; k < n; k++) {
+          const swell = Math.min(1, 0.75 + 0.08 * k);
+          this.leadNote(e.m, t + k * E8 / 2, E8 / 2, (k % 2 ? 0.55 : 0.68) * swell * (0.94 + Math.random() * 0.06), false);
+        }
       } else {
-        this.leadNote(e.m, t, dur * 0.9, 0.8, e.len >= 3);
+        this.leadNote(e.m, t, dur * 0.85, 0.75, e.len >= 3);
       }
     }
   },
@@ -464,13 +493,13 @@ export const Sound = {
     o.start(t); o.stop(t + dur + 0.02);
   },
 
-  // Every frame: the band plays on, the barrel roars with your speed, and drops ping.
+  // Every frame: the band plays on, the barrel roars with your speed, and now and then a drop pings.
   update(dt, speed, lateral, mode) {
     if (!this.ac || this.ac.state !== 'running') return;
     const t = this.ac.currentTime;
     const b = this.band;
     b.lead = mode === 'run';
-    this.music.gain.setTargetAtTime(b.on ? (mode === 'run' ? 0.62 : 0.3) : 0, t, b.on ? 0.3 : 0.8);
+    this.music.gain.setTargetAtTime(b.on ? (mode === 'run' ? 0.6 : 0.28) : 0, t, b.on ? 0.3 : 0.8);
     if (b.next < t) b.next = t + 0.02;
     while (b.on && b.next < t + AHEAD) {
       this.playSlot(SONG[b.bar], b.slot, b.next);
@@ -478,11 +507,11 @@ export const Sound = {
       if (++b.slot === 8) { b.slot = 0; b.bar = b.bar + 1 < SONG.length ? b.bar + 1 : LOOP_BAR; }
     }
     this.roar.gain.setTargetAtTime(0.1 + speed * 0.008, t, 0.4);
-    this.hiss.gain.setTargetAtTime(mode === 'run' ? 0.02 + speed * 0.005 : 0.012, t, 0.2);
-    this.hissF.frequency.setTargetAtTime(900 + speed * 80 + Math.abs(lateral) * 700, t, 0.15);
-    if (Math.random() < dt * (1.5 + speed * 0.3)) {
-      const f = 900 + Math.random() * 1800;
-      this.tone(f, f * 1.9, 0.05 + Math.random() * 0.05, 0.004 + Math.random() * 0.01, 'sine', Math.random() * 2 - 1);
+    this.hiss.gain.setTargetAtTime(mode === 'run' ? 0.015 + speed * 0.003 : 0.008, t, 0.2);
+    this.hissF.frequency.setTargetAtTime(800 + speed * 60 + Math.abs(lateral) * 500, t, 0.15);
+    if (Math.random() < dt * 0.6) {
+      const f = 700 + Math.random() * 900;
+      this.tone(f, f * 1.7, 0.06 + Math.random() * 0.05, 0.003 + Math.random() * 0.004, 'sine', Math.random() * 2 - 1);
     }
   },
 
@@ -493,39 +522,39 @@ export const Sound = {
     b.on = true; b.bar = 0; b.slot = 0; b.next = t; b.voice = null;
     this.burst(1.0, 300, 0.2, 'bandpass', 0.9, 2600);
   },
-  jump() { this.burst(0.35, 600, 0.12, 'bandpass', 1.2, 2400); },
+  jump() { this.burst(0.35, 500, 0.1, 'bandpass', 1.2, 1800); },
   land(k) {
-    this.burst(0.4, 2400, 0.08 + 0.2 * k, 'lowpass', 0.7, 300);
+    this.burst(0.4, 1800, 0.08 + 0.18 * k, 'lowpass', 0.7, 250);
     this.tone(90, 50, 0.15, 0.08 * k);
   },
   leap() {
-    this.burst(0.6, 1800, 0.25, 'lowpass', 0.7, 400, 0, 0);
-    this.burst(0.9, 2600, 0.3, 'lowpass', 0.7, 200, 0, 1.3);
+    this.burst(0.6, 1500, 0.22, 'lowpass', 0.7, 350, 0, 0);
+    this.burst(0.9, 2000, 0.26, 'lowpass', 0.7, 180, 0, 1.3);
   },
   nearMiss(side, k) {
-    this.burst(0.45, 3200, 0.18 + 0.3 * k, 'bandpass', 1.4, 420, side * 0.75);
+    this.burst(0.45, 2400, 0.14 + 0.24 * k, 'bandpass', 1.2, 380, side * 0.75);
   },
   crash(kind) {
     // The splash, and the band falls apart: one last chord left ringing,
     // the lead dives off the end of the whammy bar, then only the sea.
-    this.burst(1.5, 3000, 0.9, 'lowpass', 0.7, 70);
+    this.burst(1.5, 2400, 0.8, 'lowpass', 0.7, 70);
     this.tone(110, 30, 0.8, 0.35);
-    if (kind === 'surfer' || kind === 'pack' || kind === 'board') this.tone(240, 120, 0.12, 0.2, 'triangle');
-    if (kind === 'jelly') this.tone(1800, 600, 0.4, 0.05, 'sawtooth');
+    if (kind === 'surfer' || kind === 'pack' || kind === 'board') this.tone(240, 120, 0.12, 0.18, 'triangle');
+    if (kind === 'jelly') this.tone(1200, 500, 0.4, 0.04, 'triangle');
     if (!this.ac) return;
     const b = this.band, t = Math.max(this.ac.currentTime + 0.01, b.next);
     b.on = false;
-    this.chord(midi('E2'), t, 1.6, 0.85, false);
-    this.cymbal(t, 1.5);
+    this.chord(midi('E2'), t, 1.6, 0.6, false);
+    this.cymbal(t, 1.2);
     this.kick(t);
-    const v = this.leadNote(midi('E5'), t, 1.4, 0.8, false);
+    const v = this.leadNote(midi('E4'), t, 1.4, 0.75, false);
     v.src.playbackRate.setValueAtTime(v.rate, t + 0.15);
-    v.src.playbackRate.exponentialRampToValueAtTime(v.rate * 0.12, t + 1.3);
+    v.src.playbackRate.exponentialRampToValueAtTime(v.rate * 0.18, t + 1.3);
   },
   chime() {
     if (!this.ok()) return;
-    this.tone(1318.5, 1318.5, 1.6, 0.02, 'sine', -0.3);
-    this.tone(1760, 1760, 2.0, 0.015, 'sine', 0.3, 0.12);
+    this.tone(1318.5, 1318.5, 1.4, 0.012, 'sine', -0.3);
+    this.tone(1760, 1760, 1.8, 0.009, 'sine', 0.3, 0.12);
   },
 };
 
