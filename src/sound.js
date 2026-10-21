@@ -143,7 +143,7 @@ function shaper(ac, drive) {
     curve[i] = (x >= 0 ? Math.tanh(x) : Math.tanh(x * 0.8) / 0.8) / Math.tanh(drive);
   }
   s.curve = curve;
-  s.oversample = '4x';
+  s.oversample = LITE ? 'none' : '4x';
   return s;
 }
 function filter(ac, type, f, q = 0.7, gain = 0) {
@@ -173,6 +173,10 @@ function impulse(ac, secs, decay, bounce = 0) {
   return ir;
 }
 
+// Lite (the TV default; `?full` turns it off) trims the synth so a weak audio thread keeps up.
+const Q = new URLSearchParams(location.search);
+const LITE = Q.has('lite') || ((Q.has('tv') || /FireTVApp|AFT/.test(navigator.userAgent)) && !Q.has('full'));
+
 export const Sound = {
   ac: null, out: null, sfx: null, bed: null, noise: null,
   music: null, bus: {}, strings: new Map(), band: null,
@@ -183,7 +187,14 @@ export const Sound = {
     if (this.ac) { if (this.ac.state === 'suspended') this.ac.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
-    try { this.ac = new AC(); } catch { return; }
+    try {
+      // On a TV (lite): a bigger buffer and half the sample rate, so the audio thread keeps up.
+      try { this.ac = new AC(LITE ? { latencyHint: 'playback', sampleRate: 22050 } : undefined); }
+      catch { this.ac = new AC(); }
+    } catch { return; }
+    // A starved audio thread can leave the context suspended or interrupted:
+    // bring it back unless the game itself is paused.
+    setInterval(() => { if (!this.held && this.ac.state !== 'running') this.ac.resume().catch(() => {}); }, 1000);
     const ac = this.ac;
     this.out = ac.createGain();
     this.out.gain.value = this.muted ? 0 : LEVEL;
@@ -455,7 +466,7 @@ export const Sound = {
     if (this.out) this.out.gain.setTargetAtTime(m ? 0 : LEVEL, this.ac.currentTime, 0.05);
   },
 
-  suspend(p) { if (this.ac) (p ? this.ac.suspend() : this.ac.resume()); },
+  suspend(p) { this.held = p; if (this.ac) (p ? this.ac.suspend() : this.ac.resume()); },
 
   ok() { return this.ac && !this.muted && this.ac.state === 'running'; },
 
