@@ -83,3 +83,22 @@ and then a drop pinging off the board.
 - `src/main.js`: the frame loop
 - `src/input.js`, `src/hud.js`, `src/sound.js`: controls, HUD, the band and the sea
 - `src/constants.js`, `src/math.js`: shared numbers and helpers
+
+## SNES port
+
+`snes/` is a port to a real Super Nintendo ROM (65816 assembly, LoROM/FastROM,
+128 KB): Mode 1 barrel with palette-cycled water, per-scanline HDMA bend and
+ripple, scaled sprites for the surfers, fins, turtles, sharks and jellies, and
+the original's song and instruments on the SPC700.
+
+![The SNES ROM running](docs/snes/tunnel3.gif)
+
+```sh
+python3 snes/tools/make_rom.py   # needs ca65/ld65 (cc65) and numpy; writes snes/build/tunnel3.sfc
+node snes/tools/run.mjs snes/build/tunnel3.sfc out --frames 60,120   # headless frame dumps / --audio out.wav
+```
+
+Run it in the browser at `/snes/` (`public/snes/`, using a vendored
+[SnesJs](https://github.com/elzo-d/SnesJs) core, MIT; the web DSP has no echo, so
+the lead's reverb is only audible in an emulator that implements it).
+Arrows move, X/Z/Space jump, Enter starts.
