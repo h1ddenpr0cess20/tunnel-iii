@@ -1,2 +1,5 @@
 node_modules
 dist
+snes/build/*
+!snes/build/.gitkeep
+__pycache__/

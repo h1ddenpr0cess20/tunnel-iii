@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Neverending Tunnel III (SNES)</title>
+<style>
+  :root { color-scheme: dark; --bg:#02080a; --fg:#bfe; --dim:#6a9; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:14px/1.4 system-ui, sans-serif; }
+  body { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:0 16px; box-sizing:border-box; }
+  canvas { width:min(100%, calc((100vh - 120px) * 8 / 7)); aspect-ratio:8/7; image-rendering:pixelated; background:#000; border:1px solid #0a3a3a; touch-action:none; }
+  .row { color:var(--dim); text-align:center; }
+  kbd { border:1px solid #2a5a5a; border-radius:4px; padding:0 5px; color:var(--fg); }
+  .pad { display:none; gap:12px; }
+  .pad button { width:64px; height:56px; border-radius:10px; border:1px solid #2a5a5a; background:#06191c; color:var(--fg); font-size:18px; touch-action:none; }
+  @media (pointer:coarse) { .pad { display:flex; } }
+  #go { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#000c; font-size:20px; cursor:pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="256" height="224"></canvas>
+<div class="row">Arrows move &middot; <kbd>X</kbd>/<kbd>Z</kbd>/<kbd>Space</kbd> jump &middot; <kbd>Enter</kbd> start &middot; <kbd>M</kbd> mute</div>
+<div class="pad">
+  <button data-b="6">&larr;</button><button data-b="7">&rarr;</button><button data-b="0">B</button><button data-b="8">A</button><button data-b="3">Start</button>
+</div>
+<div id="go">Click or tap to start (sound on)</div>
+<script src="emu/cart.js"></script>
+<script src="emu/dsp.js"></script>
+<script src="emu/spc.js"></script>
+<script src="emu/apu.js"></script>
+<script src="emu/pipu.js"></script>
+<script src="emu/cpu.js"></script>
+<script src="emu/snes.js"></script>
+<script src="emu/audio.js"></script>
+<script>
+function log(t) { console.log(t); }
+function getByteRep(v) { return ("0" + v.toString(16)).slice(-2).toUpperCase(); }
+function getWordRep(v) { return ("000" + v.toString(16)).slice(-4).toUpperCase(); }
+function getLongRep(v) { return ("00000" + v.toString(16)).slice(-6).toUpperCase(); }
+function clearArray(a) { for (let i = 0; i < a.length; i++) a[i] = 0; }
+
+const snes = new Snes(), audio = new AudioHandler();
+const cv = document.getElementById('c'), g = cv.getContext('2d');
+const img = g.createImageData(256, 224), px = new Uint8ClampedArray(512 * 480 * 4);
+const keymap = { ArrowLeft:6, ArrowRight:7, ArrowUp:4, ArrowDown:5, KeyX:0, KeyZ:0, Space:0, KeyC:8, KeyA:8, Enter:3, ShiftRight:2 };
+const held = new Set();
+let muted = false, running = false;
+
+function press(b, on) { on ? snes.setPad1ButtonPressed(b) : snes.setPad1ButtonReleased(b); }
+addEventListener('keydown', e => {
+  if (e.code === 'KeyM') { muted = !muted; return; }
+  if (e.code in keymap) { e.preventDefault(); press(keymap[e.code], true); }
+});
+addEventListener('keyup', e => { if (e.code in keymap) { e.preventDefault(); press(keymap[e.code], false); } });
+document.querySelectorAll('.pad button').forEach(b => {
+  const n = +b.dataset.b;
+  b.addEventListener('pointerdown', e => { e.preventDefault(); press(n, true); });
+  for (const t of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(t, () => press(n, false));
+});
+
+function frame() {
+  snes.runFrame(false);
+  snes.setPixels(px);
+  snes.setSamples(audio.sampleBufferL, audio.sampleBufferR, audio.samplesPerFrame);
+  if (muted) { audio.sampleBufferL.fill(0); audio.sampleBufferR.fill(0); }
+  audio.nextBuffer();
+  const d = img.data;
+  for (let y = 0; y < 224; y++) {
+    const sy = 2 * (y + 1) + 14;
+    for (let x = 0; x < 256; x++) {
+      const i = (sy * 512 + x * 2) * 4, o = (y * 256 + x) * 4;
+      d[o] = px[i]; d[o + 1] = px[i + 1]; d[o + 2] = px[i + 2]; d[o + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+}
+let last = 0, acc = 0;
+function loop(t) {
+  requestAnimationFrame(loop);
+  if (!running) return;
+  acc += Math.min(100, t - last); last = t;
+  let n = 0;
+  while (acc >= 1000 / 60 && n < 3) { frame(); acc -= 1000 / 60; n++; }
+  if (n === 3) acc = 0;
+}
+async function boot() {
+  const buf = await (await fetch('tunnel3.sfc')).arrayBuffer();
+  snes.loadRom(new Uint8Array(buf), false);
+  snes.reset(true);
+}
+const ready = boot();
+document.getElementById('go').addEventListener('click', async e => {
+  await ready;
+  audio.resume(); audio.start();
+  running = true; last = performance.now();
+  e.currentTarget.remove();
+});
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
